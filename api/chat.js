@@ -1,4 +1,3 @@
-// api/chat.js
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Only POST allowed" });
@@ -14,12 +13,6 @@ export default async function handler(req, res) {
     { nombre: "Naproxeno 500mg", stock: 5, receta: true }
   ];
 
-  const prompt = `
-Eres un farmacéutico experto y contestas de forma clara, profesional y humana. El stock es: ${JSON.stringify(stock)}.
-Si el usuario pregunta por un producto, responde si hay o no stock y si requiere receta.
-Mensaje del usuario: "${message}"
-  `.trim();
-
   try {
     const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -29,7 +22,14 @@ Mensaje del usuario: "${message}"
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "system",
+            content:
+              `Eres un farmacéutico experto. Tu stock actual es: ${JSON.stringify(stock)}. Si el usuario pregunta por un producto, responde si hay o no stock y si requiere receta. Responde de forma clara, profesional y humana.`
+          },
+          { role: "user", content: message }
+        ],
         max_tokens: 200,
       }),
     });
