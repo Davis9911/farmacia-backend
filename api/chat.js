@@ -1,11 +1,33 @@
-// api/chat.js
-export default async function handler(req, res) {
-  // Solución CORS para desarrollo local
+// /api/chat.js
+const FARMACIAS = {
+  carrito: {
+    nombre: "Farmacia Carrito",
+    tipo: "carrito",
+    telefono: "911223344",
+    whatsapp: "34666123456",
+    url_producto: (producto) =>
+      `https://farmaciacarrito.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
+  },
+  simple: {
+    nombre: "Farmacia Simple",
+    tipo: "simple",
+    telefono: "912223344",
+    whatsapp: "34666222333",
+  }
+};
+
+const STOCK = [
+  { nombre: "Ibuprofeno 400mg", codigo_nacional: "654777", receta: false },
+  { nombre: "Frenadol descongestivo (capsulas)", codigo_nacional: "541234", receta: false },
+  { nombre: "Naproxeno 500mg", codigo_nacional: "890800", receta: true },
+  { nombre: "La roche posay effaclar duo", codigo_nacional: "223365", receta: false }
+];
+
+export default function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Permitir la petición preflight OPTIONS de CORS
   if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
@@ -16,37 +38,30 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { message } = req.body;
+  const { message, farmacia_tipo = "carrito" } = req.body;
+  const farmacia = FARMACIAS[farmacia_tipo] || FARMACIAS.carrito;
 
-  // Stock simulado para la demo
-  const stock = [
-    { nombre: "Ibuprofeno 400mg", stock: 10, receta: false },
-    { nombre: "Frenadol", stock: 8, receta: false },
-    { nombre: "Naproxeno 500mg", stock: 5, receta: true }
-  ];
+  // Buscar producto por nombre sencillo (puedes mejorar la búsqueda luego)
+  const producto = STOCK.find((p) =>
+    message.toLowerCase().includes(p.nombre.split(" ")[0].toLowerCase())
+  );
 
-  const prompt = `
-Eres un farmacéutico experto y contestas de forma clara, profesional y humana. El stock es: ${JSON.stringify(stock)}.
-Si el usuario pregunta por un producto, responde si hay o no stock y si requiere receta.
-Mensaje del usuario: "${message}"
-  `.trim();
+  let respuesta = "";
 
-  try {
-    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 200,
-      }),
-    });
-    const data = await completion.json();
-    res.status(200).json({ reply: data.choices?.[0]?.message?.content ?? "Sin respuesta de la IA." });
-  } catch (error) {
-    res.status(500).json({ reply: "Error consultando a la IA. Revisa la API key o el saldo de OpenAI." });
+  if (producto) {
+    if (farmacia.tipo === "carrito") {
+      const url = farmacia.url_producto(producto);
+      respuesta = `Tenemos ${producto.nombre} disponible. ${
+        producto.receta ? "Requiere receta médica. " : ""
+      }Puedes comprarlo online aquí: ${url}`;
+    } else {
+      respuesta = `Tenemos ${producto.nombre} disponible. ${
+        producto.receta ? "Requiere receta médica. " : ""
+      }Para encargarlo, puedes llamarnos al ${farmacia.telefono} o escribirnos por WhatsApp: https://wa.me/${farmacia.whatsapp}`;
+    }
+  } else {
+    respuesta = "No hemos encontrado ese producto en nuestro stock. Si tienes dudas, consúltanos por WhatsApp.";
   }
+
+  res.status(200).json({ reply: respuesta });
 }
