@@ -23,19 +23,22 @@ const STOCK = [
   { nombre: "La roche posay effaclar duo", codigo_nacional: "223365", receta: false }
 ];
 
-export default function handler(req, res) {
-  // CORS dinámico para producción y local
+// ------- NUEVO MANEJO DE CORS UNIVERSAL -------
+function setCORS(res, origin) {
   const allowedOrigins = [
-    "https://farmacia-frontend-eight.vercel.app", // tu dominio de producción
-    "http://localhost:3000"                       // para pruebas en local
+    "https://farmacia-frontend-eight.vercel.app",
+    "http://localhost:3000"
   ];
-  const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
-
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+export default function handler(req, res) {
+  setCORS(res, req.headers.origin);
 
   if (req.method === "OPTIONS") {
     res.status(200).end();
@@ -43,16 +46,18 @@ export default function handler(req, res) {
   }
 
   if (req.method !== "POST") {
+    // Siempre poner los headers CORS también en errores
+    setCORS(res, req.headers.origin);
     res.status(405).json({ error: "Only POST allowed" });
     return;
   }
 
-  const { message, farmacia_tipo = "carrito" } = req.body;
+  // Asegúrate de que el body siempre llega como JSON
+  const { message, farmacia_tipo = "carrito" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_tipo] || FARMACIAS.carrito;
 
-  // Buscar producto por nombre sencillo (puedes mejorar la búsqueda luego)
   const producto = STOCK.find((p) =>
-    message.toLowerCase().includes(p.nombre.split(" ")[0].toLowerCase())
+    message && message.toLowerCase().includes(p.nombre.split(" ")[0].toLowerCase())
   );
 
   let respuesta = "";
@@ -72,5 +77,6 @@ export default function handler(req, res) {
     respuesta = "No hemos encontrado ese producto en nuestro stock. Si tienes dudas, consúltanos por WhatsApp.";
   }
 
+  setCORS(res, req.headers.origin);
   res.status(200).json({ reply: respuesta });
 }
