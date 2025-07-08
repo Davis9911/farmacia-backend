@@ -24,7 +24,16 @@ const STOCK = [
 ];
 
 export default function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS dinámico para producción y local
+  const allowedOrigins = [
+    "https://farmacia-frontend-eight.vercel.app", // tu dominio de producción
+    "http://localhost:3000"                       // para pruebas en local
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
