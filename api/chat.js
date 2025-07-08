@@ -1,4 +1,16 @@
+// api/chat.js
 export default async function handler(req, res) {
+  // Solución CORS para desarrollo local
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Permitir la petición preflight OPTIONS de CORS
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Only POST allowed" });
     return;
@@ -13,6 +25,12 @@ export default async function handler(req, res) {
     { nombre: "Naproxeno 500mg", stock: 5, receta: true }
   ];
 
+  const prompt = `
+Eres un farmacéutico experto y contestas de forma clara, profesional y humana. El stock es: ${JSON.stringify(stock)}.
+Si el usuario pregunta por un producto, responde si hay o no stock y si requiere receta.
+Mensaje del usuario: "${message}"
+  `.trim();
+
   try {
     const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -22,14 +40,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              `Eres un farmacéutico experto. Tu stock actual es: ${JSON.stringify(stock)}. Si el usuario pregunta por un producto, responde si hay o no stock y si requiere receta. Responde de forma clara, profesional y humana.`
-          },
-          { role: "user", content: message }
-        ],
+        messages: [{ role: "user", content: prompt }],
         max_tokens: 200,
       }),
     });
