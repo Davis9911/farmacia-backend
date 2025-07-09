@@ -1,4 +1,3 @@
-// /api/chat.js
 const FARMACIAS = {
   carrito: {
     nombre: "Farmacia Carrito",
@@ -23,7 +22,7 @@ const STOCK = [
   { nombre: "La roche posay effaclar duo", codigo_nacional: "223365", receta: false }
 ];
 
-// ------- NUEVO MANEJO DE CORS UNIVERSAL -------
+// ------- MANEJO DE CORS UNIVERSAL -------
 function setCORS(res, origin) {
   const allowedOrigins = [
     "https://farmacia-frontend-eight.vercel.app",
@@ -37,7 +36,7 @@ function setCORS(res, origin) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   setCORS(res, req.headers.origin);
 
   if (req.method === "OPTIONS") {
@@ -46,37 +45,77 @@ export default function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    // Siempre poner los headers CORS también en errores
     setCORS(res, req.headers.origin);
     res.status(405).json({ error: "Only POST allowed" });
     return;
   }
 
-  // Asegúrate de que el body siempre llega como JSON
   const { message, farmacia_tipo = "carrito" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_tipo] || FARMACIAS.carrito;
 
-  const producto = STOCK.find((p) =>
-    message && message.toLowerCase().includes(p.nombre.split(" ")[0].toLowerCase())
-  );
+  // ------ PROMPT PERSONALIZADO ------
+  const prompt = `
+Eres un farmacéutico experto y contestas de forma clara, profesional y humana.
+Responde SIEMPRE en español y con información sencilla, cortés y útil.
+Normas:
+- Usa los datos de stock que te dé el sistema (te paso abajo un array de productos con nombre, código nacional y si requiere receta).
+- Si el producto requiere receta, avísalo claramente.
+- Si hay variantes (dosis, formatos), pregunta cuál necesita el cliente.
+- Si el usuario pide algo que no tienes, sugiere preguntar en la farmacia o consultar un médico.
+- Si hay errores típicos (nombres mal escritos, dosis sin unidades...), intenta adivinar a qué se refiere el usuario y pregunta para confirmar.
+- No digas el número de unidades que hay en Stock, solo indica si hay o no stock.
+- No digas nada de su uso, indicaciones, ni efectos secundarios ni posología de cualquier producto que te pregunten.
+- Si piden más unidades de las que disponemos, decir que no disponemos de tantas y que solo podemos ofrecer las unidades que tenemos.
+- Si el producto tiene código nacional que empieza por 0, 1, 2, 3 o 4:
+  NO es un medicamento. Es un producto de parafarmacia.
+  NUNCA requiere receta médica. NO digas nada sobre receta.
+  Solo informa sobre disponibilidad.
+- Si el producto tiene código nacional que empieza por 5, 6, 7, 8 o 9:
+  Es un medicamento (con o sin receta).
+  SIEMPRE debes informar si requiere o no receta médica, según la información del stock.
+  Responde de forma clara y profesional.
+- Si el usuario no da un código nacional, usa el nombre del producto para intentar identificarlo y aplica la lógica anterior.
+- Si preguntan por el uso o indicaciones, responde que no puedes dar esa información por aquí, pero que puede consultarnos por teléfono o WhatsApp ${farmacia.whatsapp ? `(https://wa.me/${farmacia.whatsapp})` : ""}.
 
-  let respuesta = "";
+Ejemplo:
+- Si el cliente pregunta por una “crema La Roche Posay” con código nacional que empieza por 2, responde solo disponibilidad y detalles, sin hablar de recetas.
+- Si pregunta por “Ibuprofeno 600mg” (código nacional empieza por 6), responde si está disponible y añade si requiere o no receta.
 
-  if (producto) {
-    if (farmacia.tipo === "carrito") {
-      const url = farmacia.url_producto(producto);
-      respuesta = `Tenemos ${producto.nombre} disponible. ${
-        producto.receta ? "Requiere receta médica. " : ""
-      }Puedes comprarlo online aquí: ${url}`;
-    } else {
-      respuesta = `Tenemos ${producto.nombre} disponible. ${
-        producto.receta ? "Requiere receta médica. " : ""
-      }Para encargarlo, puedes llamarnos al ${farmacia.telefono} o escribirnos por WhatsApp: https://wa.me/${farmacia.whatsapp}`;
+Stock disponible:
+${JSON.stringify(STOCK, null, 2)}
+
+Tipo de farmacia: ${farmacia.tipo === "carrito" ? "Con carrito online" : "Encargo por WhatsApp/telefono"}
+${farmacia.tipo === "carrito" ? `Si tienes que mostrar un enlace de compra, usa este ejemplo para el producto consultado: ${farmacia.url_producto({nombre: "[nombreProducto]"})}` : `Si tienes que dar contacto, di que puede escribir por WhatsApp: https://wa.me/${farmacia.whatsapp} o llamar al ${farmacia.telefono}`}
+
+Mensaje del usuario: "${message}"
+`.trim();
+
+  // ------- LLAMADA A OPENAI -------
+  try {
+    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [{ role: "system", content: prompt }],
+        max_tokens: 250,
+        temperature: 0.5
+      }),
+    });
+
+    const data = await completion.json();
+
+    if (!data.choices || !data.choices[0]?.message?.content) {
+      throw new Error("No IA response");
     }
-  } else {
-    respuesta = "No hemos encontrado ese producto en nuestro stock. Si tienes dudas, consúltanos por WhatsApp.";
-  }
 
-  setCORS(res, req.headers.origin);
-  res.status(200).json({ reply: respuesta });
+    res.status(200).json({ reply: data.choices[0].message.content.trim() });
+  } catch (err) {
+    res.status(500).json({
+      reply: "Error consultando a la IA. Revisa la API key o el saldo de OpenAI."
+    });
+  }
 }
