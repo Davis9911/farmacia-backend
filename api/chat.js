@@ -4,6 +4,15 @@ const FARMACIAS = {
     tipo: "carrito",
     telefono: "911223344",
     whatsapp: "34666123456",
+    horario: {
+      lunes: ["09:00", "20:00"],
+      martes: ["09:00", "20:00"],
+      miercoles: ["09:00", "20:00"],
+      jueves: ["09:00", "20:00"],
+      viernes: ["09:00", "20:00"],
+      sabado: ["10:00", "14:00"],
+      domingo: null // cerrado
+    },
     url_producto: (producto) =>
       `https://farmaciacarrito.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
   },
@@ -12,6 +21,15 @@ const FARMACIAS = {
     tipo: "simple",
     telefono: "912223344",
     whatsapp: "34666222333",
+    horario: {
+      lunes: ["09:30", "18:30"],
+      martes: ["09:30", "18:30"],
+      miercoles: ["09:30", "18:30"],
+      jueves: ["09:30", "18:30"],
+      viernes: ["09:30", "18:30"],
+      sabado: null,
+      domingo: null
+    }
   }
 };
 
@@ -36,6 +54,20 @@ function setCORS(res, origin) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
+// -------- FUNCIÓN PARA SABER SI LA FARMACIA ESTÁ ABIERTA --------
+function isFarmaciaAbierta(farmacia) {
+  const now = new Date();
+  // Ojo: los días en JS van de 0 (domingo) a 6 (sábado)
+  const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const dia = dias[now.getDay()];
+  const horario = farmacia.horario?.[dia];
+  if (!horario) return false; // cerrado
+  const [horaApertura, horaCierre] = horario;
+  const horaActual = now.toTimeString().slice(0,5); // "HH:MM"
+  return horaActual >= horaApertura && horaActual <= horaCierre;
+}
+
+// --------- TU HANDLER PRINCIPAL ----------
 export default async function handler(req, res) {
   setCORS(res, req.headers.origin);
 
@@ -52,6 +84,20 @@ export default async function handler(req, res) {
 
   const { message, farmacia_tipo = "carrito" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_tipo] || FARMACIAS.carrito;
+
+  // ------ MENSAJE DE HORARIO ------
+  const abierta = isFarmaciaAbierta(farmacia);
+  let mensajeHorario = "";
+
+  if (!abierta) {
+    mensajeHorario = `La farmacia está cerrada en este momento. Nuestro horario es:\n` +
+      Object.entries(farmacia.horario)
+        .map(([dia, horas]) => {
+          if (!horas) return `${dia[0].toUpperCase() + dia.slice(1)}: cerrado`;
+          return `${dia[0].toUpperCase() + dia.slice(1)}: de ${horas[0]} a ${horas[1]}`;
+        }).join("\n") +
+      `\nPuedes dejar tu consulta o encargo y te lo preparamos para recogerlo en horario de apertura.`;
+  }
 
   // ------ PROMPT PERSONALIZADO ------
   const prompt = `
@@ -76,11 +122,8 @@ Normas:
   Responde de forma clara y profesional.
 - Si el usuario no da un código nacional, usa el nombre del producto para intentar identificarlo y aplica la lógica anterior.
 - Si preguntan por el uso o indicaciones, responde que no puedes dar esa información por aquí, pero que puede consultarnos por teléfono o WhatsApp ${farmacia.whatsapp ? `(https://wa.me/${farmacia.whatsapp})` : ""}.
-- No repitas enlaces en la misma respuesta (solo 1 botón de WhatsApp i un teléfono)
 
-Ejemplo:
-- Si el cliente pregunta por una “crema La Roche Posay” con código nacional que empieza por 2, responde solo disponibilidad y detalles, sin hablar de recetas.
-- Si pregunta por “Ibuprofeno 600mg” (código nacional empieza por 6), responde si está disponible y añade si requiere o no receta.
+${mensajeHorario ? `IMPORTANTE: ${mensajeHorario}` : ""}
 
 Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
