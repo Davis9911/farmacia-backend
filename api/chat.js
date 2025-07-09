@@ -1,32 +1,32 @@
 const FARMACIAS = {
-  carrito: {
-    nombre: "Farmacia Carrito",
-    tipo: "carrito",
-    telefono: "911223344",
-    whatsapp: "34666123456",
+  riera: {
+    nombre: "Farmacia Riera",
+    tipo: "carrito", // o "simple"
+    telefono: "930001122",
+    whatsapp: "34666000111",
     horario: {
-      lunes: ["09:00", "20:00"],
-      martes: ["09:00", "20:00"],
-      miercoles: ["09:00", "20:00"],
-      jueves: ["09:00", "20:00"],
-      viernes: ["09:00", "20:00"],
-      sabado: ["10:00", "14:00"],
+      lunes: ["08:30", "20:30"],
+      martes: ["08:30", "20:30"],
+      miercoles: ["08:30", "20:30"],
+      jueves: ["08:30", "20:30"],
+      viernes: ["08:30", "20:30"],
+      sabado: ["09:00", "14:00"],
       domingo: null // cerrado
     },
     url_producto: (producto) =>
-      `https://farmaciacarrito.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
+      `https://farmaciariera.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
   },
-  simple: {
-    nombre: "Farmacia Simple",
-    tipo: "simple",
-    telefono: "912223344",
-    whatsapp: "34666222333",
+  uriarte: {
+    nombre: "Farmacia Uriarte",
+    tipo: "simple", // o "carrito"
+    telefono: "931112233",
+    whatsapp: "34666112233",
     horario: {
-      lunes: ["09:30", "18:30"],
-      martes: ["09:30", "18:30"],
-      miercoles: ["09:30", "18:30"],
-      jueves: ["09:30", "18:30"],
-      viernes: ["09:30", "18:30"],
+      lunes: ["09:00", "19:00"],
+      martes: ["09:00", "19:00"],
+      miercoles: ["09:00", "19:00"],
+      jueves: ["09:00", "19:00"],
+      viernes: ["09:00", "19:00"],
       sabado: null,
       domingo: null
     }
@@ -57,17 +57,16 @@ function setCORS(res, origin) {
 // -------- FUNCIÓN PARA SABER SI LA FARMACIA ESTÁ ABIERTA --------
 function isFarmaciaAbierta(farmacia) {
   const now = new Date();
-  // Ojo: los días en JS van de 0 (domingo) a 6 (sábado)
   const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
   const dia = dias[now.getDay()];
   const horario = farmacia.horario?.[dia];
   if (!horario) return false; // cerrado
   const [horaApertura, horaCierre] = horario;
-  const horaActual = now.toTimeString().slice(0,5); // "HH:MM"
+  const horaActual = now.toTimeString().slice(0,5);
   return horaActual >= horaApertura && horaActual <= horaCierre;
 }
 
-// --------- TU HANDLER PRINCIPAL ----------
+// --------- HANDLER MULTIFARMACIA ----------
 export default async function handler(req, res) {
   setCORS(res, req.headers.origin);
 
@@ -82,8 +81,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { message, farmacia_tipo = "carrito" } = req.body || {};
-  const farmacia = FARMACIAS[farmacia_tipo] || FARMACIAS.carrito;
+  // Nuevo: usamos farmacia_id para identificar la farmacia
+  const { message, farmacia_id = "riera" } = req.body || {};
+  const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
 
   // ------ MENSAJE DE HORARIO ------
   const abierta = isFarmaciaAbierta(farmacia);
