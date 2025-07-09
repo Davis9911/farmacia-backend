@@ -1,7 +1,13 @@
+const API_TOKEN = process.env.API_TOKEN || "CaminogloriaDPM2709_";
+
+const RATE_LIMIT = 100; // máximo de peticiones por IP y por minuto
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto en milisegundos
+const ipAccess = {};
+
 const FARMACIAS = {
   riera: {
     nombre: "Farmacia Riera",
-    tipo: "carrito", // o "simple"
+    tipo: "carrito",
     telefono: "930001122",
     whatsapp: "34666000111",
     horario: {
@@ -11,14 +17,14 @@ const FARMACIAS = {
       jueves: ["08:30", "20:30"],
       viernes: ["08:30", "20:30"],
       sabado: ["09:00", "14:00"],
-      domingo: null // cerrado
+      domingo: null
     },
     url_producto: (producto) =>
       `https://farmaciariera.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
   },
   uriarte: {
     nombre: "Farmacia Uriarte",
-    tipo: "simple", // o "carrito"
+    tipo: "simple",
     telefono: "931112233",
     whatsapp: "34666112233",
     horario: {
@@ -51,7 +57,7 @@ function setCORS(res, origin) {
   }
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-api-key");
 }
 
 // -------- FUNCIÓN PARA SABER SI LA FARMACIA ESTÁ ABIERTA --------
@@ -76,11 +82,34 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    setCORS(res, req.headers.origin);
     res.status(405).json({ error: "Only POST allowed" });
     return;
   }
 
+  // --- TOKEN CHECK ---
+  const token = req.headers["x-api-key"];
+  if (token !== API_TOKEN) {
+    res.status(401).json({ error: "Token inválido" });
+    return;
+  }
+
+  // --- RATE LIMITING ---
+  const ip = req.headers["x-forwarded-for"] || req.socket?.remoteAddress;
+  const now = Date.now();
+
+  if (!ipAccess[ip]) {
+    ipAccess[ip] = [];
+  }
+  // Elimina peticiones fuera de la ventana de tiempo
+  ipAccess[ip] = ipAccess[ip].filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+
+  if (ipAccess[ip].length >= RATE_LIMIT) {
+    res.status(429).json({ error: "Demasiadas peticiones, espera un minuto" });
+    return;
+  }
+  ipAccess[ip].push(now);
+
+  // ----------- TU LÓGICA DEL CHAT AQUÍ -----------
   // Nuevo: usamos farmacia_id para identificar la farmacia
   const { message, farmacia_id = "riera" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;

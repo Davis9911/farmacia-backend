@@ -1,8 +1,8 @@
-// Archivo: whatsapp.js
-// Pon este archivo junto a chat.js en /api/
+const API_TOKEN = process.env.API_TOKEN || "CaminogloriaDPM2709_";
 
-// IMPORTANTE: reutiliza la lógica de farmacias, stock, horarios, etc.
-// Puedes copiar las constantes FARMACIAS y STOCK, o mejor aún, extraerlas a un archivo común para compartirlas con chat.js y whatsapp.js.
+const RATE_LIMIT = 100; // máximo de peticiones por IP y por minuto
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto en milisegundos
+const ipAccess = {};
 
 const FARMACIAS = {
   riera: {
@@ -37,7 +37,7 @@ const FARMACIAS = {
       sabado: null,
       domingo: null
     },
-    activaWhatsapp: false, // Por ejemplo, no activa WhatsApp
+    activaWhatsapp: true,
   }
 };
 
@@ -48,7 +48,7 @@ const STOCK = [
   { nombre: "La roche posay effaclar duo", codigo_nacional: "223365", receta: false }
 ];
 
-// --- Puedes copiar la función de horario tal cual la tienes en chat.js ---
+// -------- FUNCIÓN PARA SABER SI LA FARMACIA ESTÁ ABIERTA --------
 function isFarmaciaAbierta(farmacia) {
   const now = new Date();
   const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
@@ -60,20 +60,35 @@ function isFarmaciaAbierta(farmacia) {
   return horaActual >= horaApertura && horaActual <= horaCierre;
 }
 
-// --- Aquí empieza el handler principal ---
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Only POST allowed" });
     return;
   }
 
-  // Ejemplo de body que recibirás de la plataforma (puedes simularlo así en pruebas):
-  // {
-  //   "message": "Quiero 2 ibuprofenos",
-  //   "farmacia_id": "riera",
-  //   "telefono_usuario": "34666333444",
-  //   "nombre_usuario": "Pedro"
-  // }
+  // --- TOKEN CHECK ---
+  const token = req.headers["x-api-key"];
+  if (token !== API_TOKEN) {
+    res.status(401).json({ error: "Token inválido" });
+    return;
+  }
+
+  // --- RATE LIMITING ---
+  const ip = req.headers["x-forwarded-for"] || req.socket?.remoteAddress;
+  const now = Date.now();
+
+  if (!ipAccess[ip]) {
+    ipAccess[ip] = [];
+  }
+  ipAccess[ip] = ipAccess[ip].filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+
+  if (ipAccess[ip].length >= RATE_LIMIT) {
+    res.status(429).json({ error: "Demasiadas peticiones, espera un minuto" });
+    return;
+  }
+  ipAccess[ip].push(now);
+
+  // ------------ LÓGICA PRINCIPAL -------------
   const {
     message,
     farmacia_id = "riera",
@@ -89,7 +104,21 @@ export default async function handler(req, res) {
     return;
   }
 
-  // --- PROMPT adaptado para WhatsApp (más directo y corto) ---
+  // --- MENSAJE DE HORARIO ---
+  const abierta = isFarmaciaAbierta(farmacia);
+  let mensajeHorario = "";
+
+  if (!abierta) {
+    mensajeHorario = `La farmacia está cerrada en este momento. Nuestro horario es:\n` +
+      Object.entries(farmacia.horario)
+        .map(([dia, horas]) => {
+          if (!horas) return `${dia[0].toUpperCase() + dia.slice(1)}: cerrado`;
+          return `${dia[0].toUpperCase() + dia.slice(1)}: de ${horas[0]} a ${horas[1]}`;
+        }).join("\n") +
+      `\nPuedes dejar tu consulta o encargo y te lo preparamos para recogerlo en horario de apertura.`;
+  }
+
+  // --- PROMPT ADAPTADO PARA WHATSAPP ---
   const prompt = `
 Eres un farmacéutico experto. Responde SIEMPRE en español, de forma muy clara, educada y profesional.
 Normas:
@@ -101,6 +130,8 @@ Normas:
 - Si tienes que pasar un enlace de producto, ponlo solo una vez por producto.
 - Si tienes que pasar el WhatsApp de la farmacia, ponlo solo una vez.
 - Si el usuario no es cliente (proveedor, distribuidor), responde solo con un acuse de recibo.
+
+${mensajeHorario ? `IMPORTANTE: ${mensajeHorario}` : ""}
 
 Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
@@ -138,7 +169,6 @@ Mensaje del usuario (${nombre_usuario || telefono_usuario}): "${message}"
       throw new Error("No IA response");
     }
 
-    // ¡Aquí devuelves la respuesta del bot!
     res.status(200).json({ reply: data.choices[0].message.content.trim() });
   } catch (err) {
     res.status(500).json({
