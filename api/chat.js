@@ -1,4 +1,4 @@
-const API_TOKEN = process.env.API_TOKEN || "CaminogloriaDPM2709_";
+const API_TOKEN = process.env.API_TOKEN
 
 const RATE_LIMIT = 100; // máximo de peticiones por IP y por minuto
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto en milisegundos
