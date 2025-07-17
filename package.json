@@ -1,5 +1,8 @@
 {
   "name": "farmacia-backend",
   "version": "1.0.0",
-  "main": "api/chat.js"
+  "main": "api/chat.js",
+  "dependencies": {
+    "cors": "^2.8.5"
+  }
 }
