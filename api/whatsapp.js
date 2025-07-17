@@ -1,4 +1,28 @@
-const API_TOKEN = process.env.API_TOKEN
+import Cors from 'cors';
+
+const cors = Cors({
+  methods: ['POST', 'OPTIONS'],
+  origin: [
+    "https://farmacia-frontend-eight.vercel.app",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ],
+  credentials: false
+});
+
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
+
+// ----------- RESTO DE TU CÓDIGO -------------
+const API_TOKEN = process.env.API_TOKEN;
 
 const RATE_LIMIT = 100; // máximo de peticiones por IP y por minuto
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto en milisegundos
@@ -61,6 +85,14 @@ function isFarmaciaAbierta(farmacia) {
 }
 
 export default async function handler(req, res) {
+  // --- HABILITA CORS ---
+  await runMiddleware(req, res, cors);
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Only POST allowed" });
     return;
