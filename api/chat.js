@@ -244,9 +244,17 @@ export default async function handler(req, res) {
 
   // ----------- TU LÓGICA DEL CHAT AQUÍ -----------
   // Nuevo: usamos farmacia_id para identificar la farmacia
-  const { message, farmacia_id = "riera" } = req.body || {};
-  const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
+  let posibleProducto = null;
+  let posibleLink = "";
 
+  if (farmacia.tipo === "carrito") {
+    posibleProducto = STOCK.find(p =>
+      message.toLowerCase().includes(p.nombre.toLowerCase().split(" ")[0])
+    );
+    if (posibleProducto && farmacia.url_producto) {
+      posibleLink = farmacia.url_producto(posibleProducto);
+    }
+  }
   // ------ MENSAJE DE HORARIO ------
   const abierta = isFarmaciaAbierta(farmacia);
   let mensajeHorario = "";
@@ -262,7 +270,7 @@ export default async function handler(req, res) {
   }
 
   // ------ PROMPT PERSONALIZADO ------
-  const prompt = `
+ const prompt = `
 Eres un farmacéutico experto y contestas de forma clara, profesional y humana.
 Responde SIEMPRE en español y con información sencilla, cortés y útil.
 Normas:
@@ -292,7 +300,7 @@ Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
 
 Tipo de farmacia: ${farmacia.tipo === "carrito" ? "Con carrito online" : "Encargo por WhatsApp/telefono"}
-${farmacia.tipo === "carrito" ? `Si tienes que mostrar un enlace de compra, usa este ejemplo para el producto consultado: ${farmacia.url_producto({nombre: "[nombreProducto]"})}` : `Si tienes que dar contacto, di que puede escribir por WhatsApp: https://wa.me/${farmacia.whatsapp} o llamar al ${farmacia.telefono}`}
+${farmacia.tipo === "carrito" && posibleLink ? `Si tienes que mostrar un enlace de compra del producto consultado, usa este enlace: ${posibleLink}` : ""}
 
 Mensaje del usuario: "${message}"
 `.trim();
