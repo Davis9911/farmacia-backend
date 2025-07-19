@@ -3,6 +3,111 @@ const API_TOKEN = process.env.API_TOKEN
 const RATE_LIMIT = 100; // máximo de peticiones por IP y por minuto
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto en milisegundos
 const ipAccess = {};
+ // --- LINKS de productos Uriarte (pegados de la web) ---
+const LINKS_URIARTE = [
+  "https://www.farmaciauriartefmas.com/catalog/product/view/id/87296/s/interapothek-protector-labial-manteca-de-karite-spf50/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/87020/s/interapothek-protector-labial-con-aloe-spf20/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84253/s/interapothek-protector-labial-sabor-fresa-spf15/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84183/s/interapothek-protector-labial-sabor-pi-a-spf20/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92064/s/interapothek-balsamo-nariz-y-labios-tubo-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84254/s/interapothek-protector-labial-sabor-vainillalima-spf30/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92693/s/interapothek-lapiz-ojos-negro/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70293/s/interapothek-balsamo-labial-frambuesa-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70298/s/interapothek-balsamo-reparador-nariz-y-labios-15g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70296/s/interapothek-balsamo-labial-neutro-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86703/s/interapothek-esmalte-de-unas-coral-n14-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93189/s/interapothek-solar-emulsion-color-spf50-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70294/s/interapothek-balsamo-labial-kiwi-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92131/s/interapothek-solar-stick-50-25g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/87080/s/interapothek-solar-mineral-nino-spf50-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70250/s/interapothek-aceite-de-almendras-dulces-250ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94158/s/interapothek-contorno-ojos-vitamina-c-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84549/s/interapothek-leche-hidratante-corporal-aloe-vera-100ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86692/s/interapothek-barra-de-labios-burdeos-n2-42g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/87002/s/interapothek-esmalte-una-marron-n23-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/83271/s/interapothek-leche-hidratante-corporal-aloe-vera-con-dosificador-500ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/87983/s/interapothek-leche-hidratante-corporal-aloe-vera-200ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86700/s/interapothek-esmalte-de-unas-azul-n11-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86702/s/interapothek-esmalte-de-unas-rosa-pastel-n13-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92082/s/interapothek-barra-de-labios-n-8-4-2g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93190/s/interapothek-solar-emulsion-spf50-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70251/s/interapothek-aceite-de-almendras-dulces-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86698/s/interapothek-esmalte-de-unas-rosa-palo-n02-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/83205/s/interapothek-leche-hidratante-corporal-spa-500ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70361/s/interapothek-crema-corporal-con-extracto-de-leche-de-coco-300ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70393/s/interapothek-discos-desmaquillantes-ovalados-algodon-40uds/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/90416/s/interapothek-serum-niacinamida-30ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/83956/s/interapothek-solar-aceite-potenciador-del-bronceado-spf30-200ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92084/s/interapothek-esmalte-de-unas-azul-marino-n25-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70295/s/interapothek-balsamo-labial-naranja-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94159/s/interapothek-contorno-ojos-colageno-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70362/s/interapothek-crema-corporal-nutritiva-300ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86693/s/interapothek-barra-de-labios-rosa-intenso-n3-42g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93198/s/interapothek-solar-tacto-seda-spf50-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93463/s/interapothek-gel-facial-limpiador-250-ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70297/s/interapothek-balsamo-labial-pi-a-15ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93192/s/interapothek-solar-gel-spf50-50-ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86694/s/interapothek-barra-de-labios-marron-n4-42g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93366/s/interapothek-solar-gel-crema-spf30-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94161/s/interapothek-crema-dia-bio-peptido-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/83685/s/interapothek-leche-hidratante-corporal-avena-con-dosificador-500ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92692/s/interapothek-lapiz-ojos-marron/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70249/s/interapothek-aceite-de-almendras-dulces-125ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86701/s/interapothek-esmalte-de-unas-lila-n12-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/93191/s/interapothek-solar-gel-crema-spf50-200ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92081/s/interapothek-barra-de-labios-n7-42g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84447/s/interapothek-serum-revitalizante-o2-30ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/92085/s/interapothek-esmalte-de-unas-coral-rojo-n26-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94018/s/interapothek-solar-spray-50-100ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94164/s/interapothek-crema-noche-bio-peptido-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84767/s/interapothek-leche-hidratante-corporal-seda-500ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/94163/s/interapothek-crema-dia-vitamina-c-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/70518/s/interapothek-locion-hidratante-para-piel-atopica-400ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/84766/s/interapothek-leche-hidratante-corporal-cero-500ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/86704/s/interapothek-esmalte-de-unas-fucsia-n20-10ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=asc&max=0&min=0&order=name",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=asc&max=0&min=0&order=price",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=desc&max=0&min=0&order=price",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=asc&max=0&min=0&order=fmas_orden",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=desc&max=0&min=0&order=fmas_porcentaje_dto",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=asc&max=0&min=0&order=kiosko",
+"https://www.farmaciauriartefmas.com/cosmetica.html?dir=asc&max=0&min=0&order=stock_kiosko",
+"https://www.farmaciauriartefmas.com/cosmetica.html?limit=60&max=0&min=0",
+"https://www.farmaciauriartefmas.com/cosmetica.html?limit=120&max=0&min=0",
+"https://www.farmaciauriartefmas.com/cosmetica.html?limit=180&max=0&min=0",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&mode=list",
+"https://www.farmaciauriartefmas.com/cosmetica.html#",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&p=2&id=1197706",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&p=3&id=1197706",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&p=4&id=1197706",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&p=5&id=1197706",
+"https://www.farmaciauriartefmas.com/cosmetica.html?max=0&min=0&p=2&id=1197706",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/13940/s/babe-fotop-facial-fluido-color-sfp50-50ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/14081/s/rizapestanas-automatico-beter/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62186/s/aderma-protect-xtrem-stick-spf50-8g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62196/s/weleda-aceite-anticelulitico-de-abedul-100ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62208/s/abe-ula-blanca-grande/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62209/s/abe-ula-blanca/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62210/s/abe-ula-descanso-ojos-4-5-gr/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62211/s/abe-ula-negra/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62212/s/abe-ula-perfilador-ojos-marron/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62213/s/abe-ula-perfilador-ojos-negro/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62216/s/abradermol-crema-exfoliante-45g/category/1197706/",
+"https://www.farmaciauriartefmas.com/catalog/product/view/id/62267/s/vicorva-aceite-arbol-del-te-30ml/category/1197706/",
+"https://www.farmaciauriartefmas.com/sales/guest/form",
+
+  // ...más enlaces que tengas
+];
+
+// --- Función de búsqueda fuzzy para los links de Uriarte ---
+function url_producto_uriarte(producto) {
+  if (!producto?.nombre) return "";
+  const nombreNorm = producto.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+  const found = LINKS_URIARTE.find(url => 
+    url.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").includes(nombreNorm)
+  );
+  return found || "";
+}
 
 const FARMACIAS = {
   riera: {
@@ -35,7 +140,8 @@ const FARMACIAS = {
       viernes: ["09:00", "19:00"],
       sabado: null,
       domingo: null
-    }
+     },
+    url_producto: url_producto_uriarte, // <-- AÑADE ESTA LÍNEA
   }
 };
 
@@ -50,7 +156,8 @@ const STOCK = [
 function setCORS(res, origin) {
   const allowedOrigins = [
     "https://farmacia-frontend-eight.vercel.app",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
   ];
   if (allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
