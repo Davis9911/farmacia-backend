@@ -129,7 +129,7 @@ const FARMACIAS = {
   },
   uriarte: {
     nombre: "Farmacia Uriarte",
-    tipo: "simple",
+    tipo: "carrito",
     telefono: "931112233",
     whatsapp: "34666112233",
     horario: {
