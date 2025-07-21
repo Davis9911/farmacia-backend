@@ -233,7 +233,6 @@ export default async function handler(req, res) {
   if (!ipAccess[ip]) {
     ipAccess[ip] = [];
   }
-  // Elimina peticiones fuera de la ventana de tiempo
   ipAccess[ip] = ipAccess[ip].filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
 
   if (ipAccess[ip].length >= RATE_LIMIT) {
@@ -242,26 +241,34 @@ export default async function handler(req, res) {
   }
   ipAccess[ip].push(now);
 
-  const { message, farmacia_id = "riera" } = req.body || {};
+  // ------ PARTE IMPORTANTE: MEMORIA CONVERSACIÓN ------
+  // Recibimos todo el historial desde frontend
+  const { messages = [], farmacia_id = "riera" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
 
-  // ----------- TU LÓGICA DEL CHAT AQUÍ -----------
-  // Nuevo: usamos farmacia_id para identificar la farmacia
+  // Buscamos el producto más reciente del historial
   let posibleProducto = null;
   let posibleLink = "";
 
-  if (farmacia.tipo === "carrito") {
-    posibleProducto = STOCK.find(p =>
-      message.toLowerCase().includes(p.nombre.toLowerCase().split(" ")[0])
-    );
-    if (posibleProducto && farmacia.url_producto) {
-      posibleLink = farmacia.url_producto(posibleProducto);
+  // Busca el último producto mencionado en el historial
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    for (const p of STOCK) {
+      // fuzzy: incluye el nombre principal (mejorable con librería fuzzy)
+      if (msg.content.toLowerCase().includes(p.nombre.toLowerCase().split(" ")[0])) {
+        posibleProducto = p;
+        break;
+      }
     }
+    if (posibleProducto) break;
   }
+  if (posibleProducto && farmacia.url_producto) {
+    posibleLink = farmacia.url_producto(posibleProducto);
+  }
+
   // ------ MENSAJE DE HORARIO ------
   const abierta = isFarmaciaAbierta(farmacia);
   let mensajeHorario = "";
-
   if (!abierta) {
     mensajeHorario = `La farmacia está cerrada en este momento. Nuestro horario es:\n` +
       Object.entries(farmacia.horario)
@@ -272,8 +279,8 @@ export default async function handler(req, res) {
       `\nPuedes dejar tu consulta o encargo y te lo preparamos para recogerlo en horario de apertura.`;
   }
 
-  // ------ PROMPT PERSONALIZADO MEJORADO ------
-const prompt = `
+  // ------ PROMPT PERSONALIZADO ------
+  const promptSystem = `
 Eres un farmacéutico experto y contestas de forma clara, profesional y humana.
 Responde SIEMPRE en español y con información sencilla, cortés y útil.
 Normas:
@@ -296,16 +303,13 @@ Normas:
 - Si el usuario no da un código nacional, usa el nombre del producto para intentar identificarlo y aplica la lógica anterior.
 - Si preguntan por el uso o indicaciones, responde que no puedes dar esa información por aquí, pero que puede consultarnos por teléfono o WhatsApp ${farmacia.whatsapp ? `(https://wa.me/${farmacia.whatsapp})` : ""}.
 - Si el usuario pregunta por el horario, responde claramente con los horarios de apertura de la farmacia.
-
 ${mensajeHorario ? `IMPORTANTE: ${mensajeHorario}` : ""}
 
 Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
 
 Tipo de farmacia: ${farmacia.tipo === "carrito" ? "Con carrito online" : "Encargo por WhatsApp/telefono"}
-${farmacia.tipo === "carrito" && posibleLink ? `Si mencionas que hay stock de "${posibleProducto.nombre}", debes incluir SIEMPRE este enlace para comprarlo o verlo online: ${posibleLink}` : ""}
-
-Mensaje del usuario: "${message}"
+${farmacia.tipo === "carrito" && posibleLink ? `Si tienes que mostrar un enlace de compra del producto consultado, usa este enlace: ${posibleLink}` : ""}
 `.trim();
 
   // ------- LLAMADA A OPENAI -------
@@ -318,8 +322,11 @@ Mensaje del usuario: "${message}"
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages: [{ role: "system", content: prompt }],
-        max_tokens: 250,
+        messages: [
+          { role: "system", content: promptSystem },
+          ...messages // el historial de usuario y bot
+        ],
+        max_tokens: 350,
         temperature: 0.5
       }),
     });
