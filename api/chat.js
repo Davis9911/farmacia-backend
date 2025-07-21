@@ -241,6 +241,9 @@ export default async function handler(req, res) {
     return;
   }
   ipAccess[ip].push(now);
+  
+  const { message, farmacia_id = "riera" } = req.body || {};
+  const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
 
   // ----------- TU LÓGICA DEL CHAT AQUÍ -----------
   // Nuevo: usamos farmacia_id para identificar la farmacia
