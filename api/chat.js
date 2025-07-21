@@ -112,7 +112,7 @@ function url_producto_uriarte(producto) {
 const FARMACIAS = {
   riera: {
     nombre: "Farmacia Riera",
-    tipo: "carrito",
+    tipo: "encargo", // <-- NO "carrito"
     telefono: "930001122",
     whatsapp: "34666000111",
     horario: {
@@ -124,12 +124,12 @@ const FARMACIAS = {
       sabado: ["09:00", "14:00"],
       domingo: null
     },
-    url_producto: (producto) =>
-      `https://farmaciariera.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
+    activaWhatsapp: true,
+    // NO tiene url_producto (borra esa línea si está)
   },
   uriarte: {
     nombre: "Farmacia Uriarte",
-    tipo: "carrito",
+    tipo: "carrito", // <-- CON carrito
     telefono: "931112233",
     whatsapp: "34666112233",
     horario: {
@@ -140,8 +140,9 @@ const FARMACIAS = {
       viernes: ["09:00", "19:00"],
       sabado: null,
       domingo: null
-     },
-    url_producto: url_producto_uriarte, // <-- AÑADE ESTA LÍNEA
+    },
+    activaWhatsapp: true,
+    url_producto: url_producto_uriarte, // <-- DEBE estar aquí
   }
 };
 
@@ -246,15 +247,14 @@ export default async function handler(req, res) {
   const { messages = [], farmacia_id = "riera" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
 
-  // Buscamos el producto más reciente del historial
-  let posibleProducto = null;
-  let posibleLink = "";
+  // 1. Buscar producto por historial
+let posibleProducto = null;
+let posibleLink = "";
 
   // Busca el último producto mencionado en el historial
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     for (const p of STOCK) {
-      // fuzzy: incluye el nombre principal (mejorable con librería fuzzy)
       if (msg.content.toLowerCase().includes(p.nombre.toLowerCase().split(" ")[0])) {
         posibleProducto = p;
         break;
@@ -262,9 +262,20 @@ export default async function handler(req, res) {
     }
     if (posibleProducto) break;
   }
+
   if (posibleProducto && farmacia.url_producto) {
     posibleLink = farmacia.url_producto(posibleProducto);
   }
+
+  // 2. Lógica para mostrar link o encargo
+  let infoLink = "";
+
+  if (farmacia.tipo === "carrito" && posibleLink) {
+    infoLink = `Puedes comprarlo online aquí: ${posibleLink}`;
+  } else if (farmacia.tipo !== "carrito") {
+    infoLink = `Para cualquier encargo, puedes escribirnos por WhatsApp: https://wa.me/${farmacia.whatsapp} o llamar al ${farmacia.telefono}`;
+  }
+
 
   // ------ MENSAJE DE HORARIO ------
   const abierta = isFarmaciaAbierta(farmacia);

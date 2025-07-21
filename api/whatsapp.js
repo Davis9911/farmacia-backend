@@ -135,7 +135,7 @@ function url_producto_uriarte(producto) {
 const FARMACIAS = {
   riera: {
     nombre: "Farmacia Riera",
-    tipo: "carrito",
+    tipo: "encargo", // <-- NO "carrito"
     telefono: "930001122",
     whatsapp: "34666000111",
     horario: {
@@ -147,13 +147,12 @@ const FARMACIAS = {
       sabado: ["09:00", "14:00"],
       domingo: null
     },
-    url_producto: (producto) =>
-      `https://farmaciariera.com/producto/${encodeURIComponent(producto.nombre.replace(/\s+/g, "-").toLowerCase())}`,
     activaWhatsapp: true,
+    // NO tiene url_producto (borra esa línea si está)
   },
   uriarte: {
     nombre: "Farmacia Uriarte",
-    tipo: "carrito",
+    tipo: "carrito", // <-- CON carrito
     telefono: "931112233",
     whatsapp: "34666112233",
     horario: {
@@ -166,7 +165,7 @@ const FARMACIAS = {
       domingo: null
     },
     activaWhatsapp: true,
-    url_producto: url_producto_uriarte, // <--- ¡AQUÍ! SOLO ESTA LÍNEA NUEVA
+    url_producto: url_producto_uriarte, // <-- DEBE estar aquí
   }
 };
 
