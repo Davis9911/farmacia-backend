@@ -241,7 +241,7 @@ export default async function handler(req, res) {
     return;
   }
   ipAccess[ip].push(now);
-  
+
   const { message, farmacia_id = "riera" } = req.body || {};
   const farmacia = FARMACIAS[farmacia_id] || FARMACIAS.riera;
 
@@ -272,8 +272,8 @@ export default async function handler(req, res) {
       `\nPuedes dejar tu consulta o encargo y te lo preparamos para recogerlo en horario de apertura.`;
   }
 
-  // ------ PROMPT PERSONALIZADO ------
- const prompt = `
+  // ------ PROMPT PERSONALIZADO MEJORADO ------
+const prompt = `
 Eres un farmacéutico experto y contestas de forma clara, profesional y humana.
 Responde SIEMPRE en español y con información sencilla, cortés y útil.
 Normas:
@@ -303,7 +303,7 @@ Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
 
 Tipo de farmacia: ${farmacia.tipo === "carrito" ? "Con carrito online" : "Encargo por WhatsApp/telefono"}
-${farmacia.tipo === "carrito" && posibleLink ? `Si tienes que mostrar un enlace de compra del producto consultado, usa este enlace: ${posibleLink}` : ""}
+${farmacia.tipo === "carrito" && posibleLink ? `Si mencionas que hay stock de "${posibleProducto.nombre}", debes incluir SIEMPRE este enlace para comprarlo o verlo online: ${posibleLink}` : ""}
 
 Mensaje del usuario: "${message}"
 `.trim();
