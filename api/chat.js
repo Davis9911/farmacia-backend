@@ -113,14 +113,15 @@ const FARMACIAS = {
   riera: {
     nombre: "Farmacia Riera",
     tipo: "encargo", // <-- NO "carrito"
-    telefono: "930001122",
-    whatsapp: "34666000111",
+    telefono: "936817238",
+    whatsapp: "34620349011",
+    direccion: "Av. de Francesc Macià, 11, 08840 Viladecans, Barcelona",
     horario: {
-      lunes: ["08:30", "20:30"],
-      martes: ["08:30", "20:30"],
-      miercoles: ["08:30", "20:30"],
-      jueves: ["08:30", "20:30"],
-      viernes: ["08:30", "20:30"],
+      lunes: ["08:30", "21:30"],
+      martes: ["08:30", "21:30"],
+      miercoles: ["08:30", "21:30"],
+      jueves: ["08:30", "21:30"],
+      viernes: ["08:30", "21:30"],
       sabado: ["09:00", "14:00"],
       domingo: null
     },
@@ -130,15 +131,16 @@ const FARMACIAS = {
   uriarte: {
     nombre: "Farmacia Uriarte",
     tipo: "carrito", // <-- CON carrito
-    telefono: "931112233",
+    telefono: "936473101",
     whatsapp: "34666112233",
+    direccion: "Carrer del Doctor Reig, 67, 08840 Viladecans, Barcelona",
     horario: {
-      lunes: ["09:00", "19:00"],
-      martes: ["09:00", "19:00"],
-      miercoles: ["09:00", "19:00"],
-      jueves: ["09:00", "19:00"],
-      viernes: ["09:00", "19:00"],
-      sabado: null,
+      lunes: ["08:30", "21:00"],
+      martes: ["08:30", "21:00"],
+      miercoles: ["08:30", "21:00"],
+      jueves: ["08:30", "21:00"],
+      viernes: ["08:30", "21:00"],
+      sabado: ["09:00", "14:00"],
       domingo: null
     },
     activaWhatsapp: true,
