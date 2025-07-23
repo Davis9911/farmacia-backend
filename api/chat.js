@@ -318,6 +318,8 @@ Normas:
 - Si el usuario pregunta por el horario, responde claramente con los horarios de apertura de la farmacia.
 ${mensajeHorario ? `IMPORTANTE: ${mensajeHorario}` : ""}
 
+Dirección de la farmacia: ${farmacia.direccion}
+
 Stock disponible:
 ${JSON.stringify(STOCK, null, 2)}
 
