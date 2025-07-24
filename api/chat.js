@@ -265,21 +265,32 @@ export default async function handler(req, res) {
 let posibleProducto = null;
 let posibleLink = "";
 
-  // Busca el último producto mencionado en el historial
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    for (const p of STOCK) {
-      if (msg.content.toLowerCase().includes(p.nombre.toLowerCase().split(" ")[0])) {
-        posibleProducto = p;
-        break;
+// Recorre desde el mensaje más reciente al más antiguo
+for (let i = messages.length - 1; i >= 0; i--) {
+  const msg = messages[i];
+  const msgText = msg.content.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const p of STOCK) {
+    // Divide el nombre del producto en palabras
+    const nombreProductoPalabras = p.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ");
+    // Cuenta cuántas palabras del nombre están en el mensaje
+    let coincidencias = 0;
+    for (const palabra of nombreProductoPalabras) {
+      if (palabra.length > 2 && msgText.includes(palabra)) {
+        coincidencias++;
       }
     }
-    if (posibleProducto) break;
+    // Si hay al menos 2 palabras que coinciden, lo consideramos el producto buscado
+    if (coincidencias >= 2) {
+      posibleProducto = p;
+      break;
+    }
   }
+  if (posibleProducto) break;
+}
+if (posibleProducto && farmacia.url_producto) {
+  posibleLink = farmacia.url_producto(posibleProducto);
+}
 
-  if (posibleProducto && farmacia.url_producto) {
-    posibleLink = farmacia.url_producto(posibleProducto);
-  }
 
   // 2. Lógica para mostrar link o encargo
   let infoLink = "";
