@@ -328,6 +328,9 @@ Normas:
 - Si el usuario no da un código nacional, usa el nombre del producto para intentar identificarlo y aplica la lógica anterior.
 - Si preguntan por el uso o indicaciones, responde que no puedes dar esa información por aquí, pero que puede consultarnos por teléfono o WhatsApp ${farmacia.whatsapp ? `(https://wa.me/${farmacia.whatsapp})` : ""}.
 - Si el usuario pregunta por el horario, responde claramente con los horarios de apertura de la farmacia, así mismo con la dirección
+- Si el usuario pide un producto que no tienes, pero hay uno similar en el stock, SUGIERE ese otro producto y usa SIEMPRE el nombre exacto tal y como aparece en el array de stock para referirte a ese producto (por ejemplo: "Weleda aceite anticelulitico de abedul 100ml").
+- Al sugerir productos alternativos o similares, incluye el nombre completo y exacto de ese producto del stock, para que el sistema pueda encontrar el enlace correspondiente.
+
 ${mensajeHorario ? `IMPORTANTE: ${mensajeHorario}` : ""}
 
 Dirección de la farmacia: ${farmacia.direccion}
