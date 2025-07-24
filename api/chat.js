@@ -102,16 +102,23 @@ const LINKS_URIARTE = [
 // --- Función de búsqueda fuzzy para los links de Uriarte ---
 function url_producto_uriarte(producto) {
   if (!producto?.nombre) return "";
-  const nombreNorm = producto.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+  const nombreNorm = producto.nombre.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/-/g, ""); // <---- QUITA también los guiones
+
   const found = LINKS_URIARTE.find(url => 
-    url.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").includes(nombreNorm)
+    url.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "")
+      .replace(/-/g, "") // <---- QUITA guiones en el link también
+      .includes(nombreNorm)
   );
-  // 👇 AÑADE ESTO:
   console.log("Buscando link para:", nombreNorm);
   console.log("Resultado encontrado:", found);
-  // 👆
   return found || "";
 }
+
 
 
 const FARMACIAS = {
