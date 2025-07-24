@@ -106,8 +106,13 @@ function url_producto_uriarte(producto) {
   const found = LINKS_URIARTE.find(url => 
     url.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").includes(nombreNorm)
   );
+  // 👇 AÑADE ESTO:
+  console.log("Buscando link para:", nombreNorm);
+  console.log("Resultado encontrado:", found);
+  // 👆
   return found || "";
 }
+
 
 const FARMACIAS = {
   riera: {
