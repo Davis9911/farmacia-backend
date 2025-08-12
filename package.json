@@ -4,5 +4,6 @@
   "main": "api/chat.js",
   "dependencies": {
     "cors": "^2.8.5"
+    "googleapis": "^137.0.0"
   }
 }
