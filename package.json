@@ -1,9 +1,14 @@
 {
   "name": "farmacia-backend",
   "version": "1.0.0",
-  "main": "api/chat.js",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
   "dependencies": {
-    "cors": "^2.8.5"
-    "googleapis": "^137.0.0"
+    "cors": "^2.8.5",
+    "googleapis": "^131.0.0",
+    "openai": "^4.0.0"
   }
 }
